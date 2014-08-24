@@ -1,5 +1,4 @@
-#This readme file will provide you with all of the steps required to 
-#clean your data
+#This readme file will provide you with all of the steps required to clean your data
 
 #Student Details
 Project:      Getting and Cleaning Data
