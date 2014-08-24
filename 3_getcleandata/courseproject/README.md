@@ -2,13 +2,13 @@
 #clean your data
 
 #Student Details
-##Project:      Getting and Cleaning Data
-##Description:  This is the solution for the course Assignment for the
-##getting and cleaning data module within the Data Science 
-##Specialisation delivered by John Hopkins University, via 
-##coursera.org.
-##Developer:    Dr Paul Fergus
-##Email:        p.fergus@ljmu.ac.uk
+Project:      Getting and Cleaning Data
+Description:  This is the solution for the course Assignment for the
+              getting and cleaning data module within the Data Science 
+              Specialisation delivered by John Hopkins University, via 
+              coursera.org.
+Developer:    Dr Paul Fergus
+Email:        p.fergus@ljmu.ac.uk
 
 #Pre-Processing
 
@@ -58,8 +58,8 @@ Step 15.  Merge the labels and feature data for all observations
   
 ## 2. Extract only the measurements on the mean and standard deviation for each measurement. 
 
-###Step 1.   Use pattern matching (grep) to extract only the mean and standard 
-###deviation measurements - results in 81 columns
+Step 1.   Use pattern matching (grep) to extract only the mean and standard 
+          deviation measurements - results in 81 columns
           
 ## 3. Uses descriptive activity names to name the activities in the data set
 
