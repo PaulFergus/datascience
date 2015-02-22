@@ -1,0 +1,44 @@
+---
+title: "Data Science Statistical Inference - ToothGrowth"
+author: "Dr Paul Fergus"
+output: word_document
+---
+  
+###Introduction
+In this second report some basic inferential data will be carried out on the ToothGrowth dataset. The dataset contains 60 observations. There are 3 features, the first is the length of the teeth of guinea pigs, the second is teh supplement type, and the third gives the dose. 
+
+###Methodology
+```{r, echo=F, warning=FALSE}
+library(datasets)
+library(ggplot2)
+```
+The table below provides a basic summary of the data. 
+```{r}
+summary(ToothGrowth)
+```
+The diagram below shows dose levels against tooth length and is grouped into supplement type. 
+```{r}
+ggplot(data=ToothGrowth, aes(x=as.factor(dose), y=len, fill=supp)) +
+  geom_bar(stat="identity",) +
+  facet_grid(. ~ supp) +
+  xlab("Dose (mg)") +
+  ylab("Tooth Length") +
+  ggtitle("ToothGrowth Dataset") +
+  guides(fill=guide_legend(title="Supplement type"))
+```
+The figures shows us that their are significant differences in the length of guinea pigs teeth when different dosages are used. The supplement type has as an affect of the outcome with OJ supplements improving the length of teeth when dosages 0.5 adn 1 are used, which suggests it is better than using VC. However, when dosage 2 is used there are no marked differences between tooth length.
+
+Below we find the confidence intervals to compare tooth growth by supplement nad dose. 
+
+```{r}
+fit <- lm(len ~ dose + supp, data=ToothGrowth)
+summary(fit)
+```
+
+Using a linear model is shows that 70% of the variance can be explained by the model. The intercept is approx 9.27 which states that the average length of a tooth is 9.27 with any Vitamin C supplement. The dose coefficient is approx. 9.76 meaning that increasing the delivery dose by 1mg will increase teh tooth length by 9.76 units. The suppVC value is -3.7 which means that giving a dose with VC will result in a decrease in tooth growth by 3.7. Given that their are only two supplment types, this means that the alternative, OJ, will result in a 3.7 increase. 
+
+95% confidence intervals and the intercept are shown below. 
+```{r}
+confint(fit)
+```
+If we collect different sample data and estimate parameters of the linear model over a number of simulations, 95% of the time, the calculated confidence interval from some future experiement will emcompass the true value of the population parameter.  

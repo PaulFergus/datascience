@@ -1,0 +1,122 @@
+---
+title: 'Practical Machine Learning: Course Project Writeup'
+author: "Dr Paul Fergus"
+date: "13/02/2015"
+output: html_document
+---
+###Introduction 
+Physical activity is a fundamental component for maintaining healthy lifestyles. Recommendations for physical activity levesl are issued by most governments as part of public health measures. As such, reliable measurement of physical activity for regulatory purposes is vital. However, the techniques and protocols used in existing physical activity research, including laboratory-based measurement, have received increasingly critical scrutiny in recent years. Consequently, physical activity researchers have begun to explore the use of wearable sensing technology, to capture large amounts of data, and machine learning techniques to produce classifications for specific physical activity events. This coursework adopts a big data inspired approach and presents a data science and supervised machine learning strategy that utilises data obtained from sensors worn by people in free-living enviornments. 
+
+###Data Load and Pre-Processing
+The dataset contains data from accelerometers fitted to a belt, the forearm and arm, and dumbells. Six participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways. For interested readers, you are referred to  http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv for more details on teh dataset. Information on the test dataset can be found at http://d396qusza40orc.cloudfront.net/predmachlearn/pml-test.csv
+
+Step 1: Load the training and test datasets. You can run summary functions for data, however, for the purpose of this study these functions have been ommitted to limit the size of the output data. A number of features have been extracted from the raw data and are available in the dataset. Therefore, these is not need for use to perform feature extraction and selection procedures. 
+
+```{r}
+#Load the training set
+trainingData <- read.csv("data/pml-training.csv", stringsAsFactors=F, na.strings=c("#DIV/0!"))
+testData20Samp <- read.csv("data/pml-testing.csv", stringsAsFactors=F, na.strings=c("#DIV/0!"))
+```
+
+There are a large number of features (too many to train a machine learning algorithm with). At this stage it makes sense to remove any features (columns) that have missing or illegable data. There are also a number of columns that do not provide any discriminate capabitlies between classes (again, these need to be removed). There is a better way of performing this cleaning process, however, the code below sufficiently reduces the number of features to 53, which is enough for the purpose of this coursework. 
+
+```{r}
+library(caret)
+#This is a simple, but useful function for clean the data. It will remove any columns that contain missing
+#missing values and can columns that do not provide any discriminatory capabilities between classes. 
+cleanData <- function(data){
+  #Remove features with na values. 
+  keep <- !sapply(data, function(x) any(is.na(x)))
+  data <- data[,keep] 
+  #No too sure what is going on but the above code does not remove NA values - 
+  #I  have had to add the following code to achieve this. Iternestingly, if I 
+  #remove the code above and just use the code below I get an error message.
+  #I have run out of time to work this out - NEED TO LOOK AT AGAIN
+  keep <- !sapply(data, function(x) any(x=="NA"))
+  data <- data[,keep]
+  
+  #Remove unwanted columns
+  col.remove <- c("X", "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", 
+              "cvtd_timestamp", "new_window", "num_window")
+  remove <- which(colnames(data) %in% col.remove)
+  data <- data[, -remove]
+  
+  return(data)
+}
+
+#Clean the training dataset
+trainingData <- cleanData(trainingData)
+testData20Samp <- cleanData(testData20Samp)
+
+#Convert the class labels to a factor
+trainingData$classe <- factor(trainingData$classe)
+
+#Take the testing set from the training set. In the test set provided there are no class labels so we do not know that the outcome should be. 
+inTrain <- createDataPartition(trainingData$classe, p=0.80, list=F)
+training.data <- trainingData[inTrain,]
+testing.data <- trainingData[-inTrain,]
+
+#Update our origional variables 
+trainingData <- training.data
+testData <- testing.data
+
+```
+
+###Classification
+Step 2: Now that the training and test datasets have been cleaned the classification process can be defined. The first tasks is to build the prediction models. We will use one density-based classifier (linear discriminant) classifier, and four nonlinear-based (support vector machine, k-nearest neighbour, decision tree, and random forest). 
+
+```{r}
+library(caret)
+library(doMC)
+registerDoMC(4)
+set.seed(12345)
+#Create prediction models
+control <- trainControl(method="cv", number=5, allowParallel = T, verboseIter = T)
+model.one <- train(classe ~., data=trainingData, method="svmRadial", trControl=control)
+model.two <- train(classe ~., data=trainingData, method="ctree", trControl=control)
+model.three <- train(classe ~., data=trainingData, method="knn", trControl=control)
+model.four <- train(classe ~., data=trainingData, method="lda", trControl=control)
+model.five <- train(classe ~., data=trainingData, method="rf", trControl=control)
+```
+
+###Results
+##Cross Validation Model Tuning
+PLEASE NOT THAT THE RESULTS WILL BE SLIGHTLY DIFFERENT WHEN THE CLASSIFIERS ARE RE-RUN, HOWEVER, THEY SHOULD BE MORE OR LESS THE SAME.
+From the results we find that cross-validation tunes our models with the best model the Random Forest with 99.4% overall accuracy, followed closely by the SVM (radial) model with 93.3% accurancy. The lowest performing model is the linear discriminant analysis model with 70.1%.  
+
+```{r}
+library(knitr)
+acc.tab <- data.frame(Model=c("SVM (Radial)", "Decision Tree", "K Nearest Neighbour", "Linear Discriminant Analysis", "Random Forest"),Accuracy=c(
+  round(max(head(model.one$results)$Accuracy), 3),
+  round(max(head(model.two$results)$Accuracy), 3),
+  round(max(head(model.three$results)$Accuracy), 3),
+  round(max(head(model.four$results)$Accuracy), 3),
+  round(max(head(model.five$results)$Accuracy), 3)))
+
+kable(acc.tab)
+```
+
+Step 3: In this step the test dataset will be used to determine the predictive capabilities of our models and to determine whether our best classifier (random forest tuned using cross validation) is in fact the best at predicting the class membership on an unsceen dataset (testData). This will provide us with some insight into the generalisability of our models.
+##Test Data Prediction
+PLEASE NOT THAT THE RESULTS WILL BE SLIGHTLY DIFFERENT WHEN THE CLASSIFIERS ARE RE-RUN, HOWEVER, THEY SHOULD BE MORE OR LESS THE SAME.
+
+```{r}
+prediction.one <- predict(model.one,testData)
+prediction.two <- predict(model.two,testData)
+prediction.three <- predict(model.three,testData)
+prediction.four <- predict(model.four,testData)
+prediction.five <- predict(model.five,testData)
+
+confusionMatrix(prediction.one, testData$classe)
+confusionMatrix(prediction.two, testData$classe)
+confusionMatrix(prediction.three, testData$classe)
+confusionMatrix(prediction.four, testData$classe)
+confusionMatrix(prediction.five, testData$classe)
+```
+
+###Discussion
+The results appear to support the cross-validation models. The Random Forest classifier performed the best on our test dataset with an overall accuracy of 99.39%. This was closely followed by the SVM (Radial, note over versions of the SVM were evaluated, however, the accuracy results were significantly lower than the Radial version) with an overall accuracy of 93.65%. The work performing model was the LDA with an overall accuracy of 70.12%. This results obtained from classifications on the test dataset correlate with the accuracies obtained from cross-validation. 
+
+Overall, the results are excellent. The sensitivities and specificities for the Random Forest classifier are mostly 99% indicating that the classifier can clearly discriminate between Class A, B, C, D and E observations. The most notible difficulty the classifier had was with the missclassification of B as A in 5 instances. Nonetheless, the remaining 1115 were classified correctly indicating a small overall error. One likely reason for the missclassification is that the five observations were close to the decision boundary between A and B. 
+
+In conclusion, it is clear from the cross-validation and test dataset predictions that the Random Forest is a good chose of classifier on the dataset used. It is able to distinguish between different classes easily. More importantly, it from our initial predictions on the test dataset, it can also generalise on data that it has not seen before. 

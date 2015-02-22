@@ -1,0 +1,92 @@
+---
+title: 'Title: Regression Models: Peer Assessment One'
+author: "Dr Paul Fergus"
+date: "25/01/2015"
+output: pdf_document
+---
+
+#Executive Summary
+In this weeks edition of Motor Trend we present a study that looks at the mtcar dataset and the difference between transmission type and miles per gallon (MPG), if any. 
+
+#Synopsis
+The results are interesting. They show that manual transmission cars get more miles per gallon (on average 2.9 MPG) when compared with automatic cars.  
+
+#Exploratory Data Analysis
+
+```{r echo=FALSE}
+library(datasets)
+data(mtcars)
+```
+The mtcars dataset is introduced with some exploratory data analysis. The dataset contains 32 observations and 11 variables. The variables are miles per gallon, number of cylinders, displacement, gross horsepower, rear axle ratio, weight, quarter mile time, vs, transmission, number of forward gears, and number of caruretors. A more detailed summary of the statics for the mtcars dataset can be found in the appendix. 
+
+The two main variables of interest in this article are mpg and am; Figure one (found in the appendix) shows a box plot and the relationship between mpg and am. From Figure One and the statistics below we can see that automatic transmission has a mean of 17.15 and a standard deviation of 3.833. While manual transmission has a mean of 24.39 and a standard deviation of 6.16.
+
+```{r echo=FALSE}
+aggregate(mpg~am, data=mtcars, mean)
+aggregate(mpg~am, data=mtcars, sd)
+```
+
+#Regression Analysis
+Regression analysis is applied at this point to determine the best model fit using all of the variables in the dataset. 
+
+##Model Selection
+
+###Linear Regression
+The analysis starts with a simple linear model using mpg and am as these variables are of particular interest to us. Looking at the  coefficients and intercpets we find that on average, automatic cars are capable of 17.15 miles to the gallon, while for manual this is 7.24 more or 24.39 miles to the gallon. These set of results do not provide us with any additional information beyond what we obtained from the exploratory data analysis. What we can take from this analysis is that the R-squared value is relatively low (0.36), which means that our model only accounts for 36% of the variance. We can conclude that additional variables are required to produce a better model (i.e. to describe more of the variance within the dataset).
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+cars.lm.model <- lm(mpg ~ am, data=mtcars)
+```
+
+###Multivariate Linear Regression
+The previous set of results make a strong case for the use of additional variables in conjunction with our initial set (mpg and am). Determining the best variable set is found using the original model and the step function. A summary of the findings can be found in the appendix. Running the analyis we find that the variable combination that accounts for the most variance are mpg, wt, qsec and am. This is shown in the new model where the R-squared value is 0.86 (0.84 when adjusted), i.e. the variable combination accounts for 86% of the variance. Using anova we can not compare the two models and use the p-value to determine whether the  wt, qsec variables contribute to the overall accuracy of the model.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+cars.lm.model.mv <- lm(mpg ~ ., data=mtcars)
+cars.lm.model.best.mv <- step(cars.lm.model.mv, direction="both")
+```
+
+```{r}
+anova(cars.lm.model, cars.lm.model.best.mv)
+```
+It is clear from the results that the variables wt and qsec, in conjunction with mpg and am, contribute to the accuracy of the model. 
+
+#Residual Plot and Diagnostics
+
+Figure Two in the Appendix shows the residuals for the model using the wt and qsec variables in conjunction with the mpg and am varaibles. These help to understand non-normality and determine if there are any signs of heteroskedasticity. 
+
+T conclude Figure Two suggests that our model fits particully well with our data and exhibits resonable normality (this is not a perfect match however) as evident in the qqplot. This said there appear to be outliers in the data. Given that the dataset is small, we would be at a disadvantage if we drop any of the observations. If we were to do this we could use SMOTE to perhaps oversample the dataset. The residual verses fitted seems to support the independece condition and the scale-location plot shows that there is constant variance. 
+
+More importnatly, we find that manual transmission cars get more miles per gallon when compared with automatic cars. The difference is 2.9 MPG.  
+
+##Appendix
+
+Summary statistics for mtcars.
+```{r}
+summary(mtcars)
+```
+
+Figure One - Box Plots. 
+```{r}
+boxplot(mpg~am, data=mtcars,
+        col = c("blue", "red"),
+        xlab = "Transmission",
+        ylab = "Miles per Gallon",
+        main = "MPG by Transmission Type")
+```
+
+Summary of simple linear model
+```{r}
+summary(cars.lm.model)
+```
+
+Summary of the multivariant linear model
+
+```{r}
+summary(cars.lm.model.best.mv)
+```
+Figure Two - Residual Plots.
+```{r}
+par(mfrow = c(2,2))
+plot(cars.lm.model.best.mv)
+```
